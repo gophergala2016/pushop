@@ -65,7 +65,25 @@ func main() {
 			Name:  "build",
 			Usage: "Builds the gallery",
 			Action: func(c *cli.Context) {
-				println("build")
+				var err error
+				dirname := c.Args().First()
+				var currentDir string
+				if currentDir, err = os.Getwd(); err != nil {
+					panic(err)
+				}
+				if dirname == "" {
+					dirname = path.Join(currentDir, defaultTargetDirectory)
+				}
+				file, err := os.Open(path.Join(currentDir, defaultConfigFileName))
+				defer file.Close()
+				err = config.load(file)
+				if err != nil {
+					panic(err)
+				}
+				err = newBuild(dirname, config).generate()
+				if err != nil {
+					panic(err)
+				}
 			},
 		},
 		{

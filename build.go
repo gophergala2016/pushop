@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"os"
+	"path"
 	"text/template"
 )
 
@@ -11,11 +12,30 @@ const (
 )
 
 type Build struct {
+	config *Config
 	target string
 }
 
-func newBuild(target string) *Build {
-	return &Build{target}
+func newBuild(target string, config *Config) *Build {
+	return &Build{config, target}
+}
+
+func (b *Build) generate() error {
+	var fileList []File
+
+	b.clean()
+	b.createDirectory()
+
+	indexFile, err := os.Create(path.Join(b.target, "index.html"))
+	if err != nil {
+		return err
+	}
+	defer indexFile.Close()
+	err = b.frontPage(fileList, indexFile)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (b *Build) clean() error {
@@ -23,10 +43,10 @@ func (b *Build) clean() error {
 }
 
 func (b *Build) createDirectory() error {
-	return os.MkdirAll(b.target, 0600)
+	return os.MkdirAll(b.target, 0766)
 }
 
-func (b *Build) frontPage(config Config, fileList []File, w io.Writer) error {
+func (b *Build) frontPage(fileList []File, w io.Writer) error {
 	layoutData, err := Asset("assets/templates/layout.html")
 	if err != nil {
 		return err
@@ -40,5 +60,9 @@ func (b *Build) frontPage(config Config, fileList []File, w io.Writer) error {
 	if err != nil {
 		return err
 	}
-	return t.Execute(w, nil)
+	templateData := map[string]interface{}{
+		"Title":       b.config.Title,
+		"Description": b.config.Description,
+	}
+	return t.Execute(w, templateData)
 }
