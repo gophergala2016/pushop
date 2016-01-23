@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"os"
+	"path"
 
 	"github.com/codegangsta/cli"
 )
@@ -33,12 +34,13 @@ func main() {
 						panic(err)
 					}
 				}
-				// TODO: Check if directory is valid
+				if _, err := os.Stat(dirname); os.IsNotExist(err) {
+					panic(err)
+				}
 				if err = config.generate(dirname); err != nil {
 					panic(err)
 				}
-				// TODO: Make the path OS agnostic
-				file, err := os.Create(dirname + "/" + defaultConfigFileName)
+				file, err := os.Create(path.Join(dirname, defaultConfigFileName))
 				defer file.Close()
 				if err != nil {
 					panic(err)
