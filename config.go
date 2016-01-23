@@ -30,7 +30,7 @@ type File struct {
 	Name        string   `yaml:"name"`
 	Description string   `yaml:"description"`
 	Tags        []string `yaml:"tags,omitempty"`
-	Exif        bool     `yaml:"exif,omitempty"`
+	Exif        bool     `yaml:"exif"`
 	Permalink   string   `yaml:"permalink,omitempty"`
 }
 
@@ -76,6 +76,7 @@ func (c *Config) generate(dirname string) error {
 		c.Content[fileInfo.Name()] = &File{
 			Name:        fileInfo.Name(),
 			Description: "",
+			Exif:        true,
 		}
 	}
 	return nil
