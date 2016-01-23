@@ -1,6 +1,10 @@
 package main
 
-import "os"
+import (
+	"io"
+	"os"
+	"text/template"
+)
 
 const (
 	defaultTargetDirectory = "_site"
@@ -22,7 +26,19 @@ func (b *Build) createDirectory() error {
 	return os.MkdirAll(b.target, 0600)
 }
 
-func (b *Build) frontPage(config Config, fileList []File) error {
-
-	return nil
+func (b *Build) frontPage(config Config, fileList []File, w io.Writer) error {
+	layoutData, err := Asset("assets/templates/layout.html")
+	if err != nil {
+		return err
+	}
+	pageData, err := Asset("assets/templates/index.html")
+	if err != nil {
+		return err
+	}
+	t, err := template.New("layout").Parse(string(layoutData))
+	t.Parse(string(pageData))
+	if err != nil {
+		return err
+	}
+	return t.Execute(w, nil)
 }
