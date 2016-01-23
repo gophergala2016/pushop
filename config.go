@@ -76,7 +76,6 @@ func (c *Config) generate(dirname string) error {
 		c.Content[fileInfo.Name()] = &File{
 			Name:        fileInfo.Name(),
 			Description: "",
-			Exif:        false,
 		}
 	}
 	return nil
