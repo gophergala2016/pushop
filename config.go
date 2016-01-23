@@ -3,6 +3,7 @@ package main
 import (
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -67,6 +68,18 @@ func (c *Config) generate(dirname string) error {
 	}
 	for _, fileInfo := range files {
 		if strings.HasPrefix(fileInfo.Name(), skipPrefix) || strings.HasPrefix(fileInfo.Name(), hiddenFilePrefix) {
+			continue
+		}
+		if fileInfo.IsDir() {
+			// Skip directories
+			continue
+		}
+		file, err := os.Open(fileInfo.Name())
+		if err != nil {
+			continue
+		}
+		defer file.Close()
+		if !isSupported(getContentType(file)) {
 			continue
 		}
 		if _, ok := c.Content[fileInfo.Name()]; ok {
