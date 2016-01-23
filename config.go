@@ -21,7 +21,7 @@ const (
 type Config struct {
 	Title       string           `yaml:"title"`
 	Description string           `yaml:"description"`
-	Author      string           `yaml:"author"`
+	Author      string           `yaml:"author,omitempty"`
 	Analytics   string           `yaml:"analytics"`
 	Content     map[string]*File `yaml:"content"`
 }
@@ -29,9 +29,9 @@ type Config struct {
 type File struct {
 	Name        string   `yaml:"name"`
 	Description string   `yaml:"description"`
-	Tags        []string `yaml:"tags"`
-	Exif        bool     `yaml:"exif"`
-	Permalink   string   `yaml:"permaling"`
+	Tags        []string `yaml:"tags,omitempty"`
+	Exif        bool     `yaml:"exif,omitempty"`
+	Permalink   string   `yaml:"permalink,omitempty"`
 }
 
 func newConfig() *Config {
