@@ -1,5 +1,12 @@
 {{define "content"}}
 	<ul>{{range $i, $image := .Images}}
-		<li><a href="$i">{{$image.Name}}</a></li>
+		<li>
+			<a href="{{$image.HtmlURL}}">
+				<figure>
+					<img src="{{$image.ThumbnailURL}}" alt="{{$image.Name}}">
+					<figcaption>{{$image.Name}}</figcaption>
+				</figure>
+			</a>
+		</li>
 	{{end}}</ul>
 {{end}}
