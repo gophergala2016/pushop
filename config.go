@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bufio"
 	"io"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 
 	"gopkg.in/yaml.v2"
@@ -43,7 +45,16 @@ func NewConfig() *Config {
 	}
 }
 
-func (c *Config) load(r io.Reader) error {
+func (c *Config) LoadFile(fileName string) error {
+	file, err := os.Open(fileName)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	return c.Load(file)
+}
+
+func (c *Config) Load(r io.Reader) error {
 	var data []byte
 	var err error
 	if data, err = ioutil.ReadAll(r); err != nil {
@@ -52,13 +63,32 @@ func (c *Config) load(r io.Reader) error {
 	return yaml.Unmarshal(data, c)
 }
 
-func (c *Config) save(w io.Writer) error {
+func (c *Config) Save(w io.Writer) error {
 	d, err := yaml.Marshal(c)
 	if err != nil {
 		return err
 	}
 	_, err = w.Write(d)
 	return err
+}
+
+func (c *Config) Init(projectPath string) error {
+	err := c.generate(projectPath)
+	if err != nil {
+		return err
+	}
+	file, err := os.Create(path.Join(projectPath, defaultConfigFileName))
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	w := bufio.NewWriter(file)
+	err = c.Save(w)
+	if err != nil {
+		panic(err)
+	}
+	w.Flush()
+	return file.Close()
 }
 
 func (c *Config) generate(dirname string) error {

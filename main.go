@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"os"
 	"path"
 
@@ -14,44 +13,41 @@ const (
 	appVersion = "0.0.1"
 )
 
+func getWorkingPath() string {
+	dirname, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return dirname
+}
+
+func getProjectPath(c *cli.Context) string {
+	dirname := c.Args().First()
+	if dirname == "" {
+		dirname = getWorkingPath()
+	}
+	if _, err := os.Stat(dirname); os.IsNotExist(err) {
+		panic(err)
+	}
+	return dirname
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = appName
 	app.Usage = appUsage
 	app.Version = appVersion
 
-	config := NewConfig()
-
 	app.Commands = []cli.Command{
 		{
 			Name:  "init",
 			Usage: "Initializes new project",
 			Action: func(c *cli.Context) {
-				var err error
-				dirname := c.Args().First()
-				if dirname == "" {
-					if dirname, err = os.Getwd(); err != nil {
-						panic(err)
-					}
-				}
-				if _, err := os.Stat(dirname); os.IsNotExist(err) {
-					panic(err)
-				}
-				if err = config.generate(dirname); err != nil {
-					panic(err)
-				}
-				file, err := os.Create(path.Join(dirname, defaultConfigFileName))
-				defer file.Close()
+				projectPath := getProjectPath(c)
+				err := NewConfig().Init(projectPath)
 				if err != nil {
 					panic(err)
 				}
-				w := bufio.NewWriter(file)
-				err = config.save(w)
-				if err != nil {
-					panic(err)
-				}
-				w.Flush()
-				file.Close()
 			},
 		},
 		{
@@ -65,23 +61,13 @@ func main() {
 			Name:  "build",
 			Usage: "Builds the gallery",
 			Action: func(c *cli.Context) {
-				var err error
-				dirname := c.Args().First()
-				var currentDir string
-				if currentDir, err = os.Getwd(); err != nil {
+				config := NewConfig()
+				projectPath := getProjectPath(c)
+				if err := config.LoadFile(path.Join(projectPath, defaultConfigFileName)); err != nil {
 					panic(err)
 				}
-				if dirname == "" {
-					dirname = path.Join(currentDir, defaultTargetDirectory)
-				}
-				file, err := os.Open(path.Join(currentDir, defaultConfigFileName))
-				defer file.Close()
-				err = config.load(file)
-				if err != nil {
-					panic(err)
-				}
-				err = NewBuild(dirname, config).Generate(currentDir)
-				if err != nil {
+				targetPath := path.Join(projectPath, defaultTargetPath)
+				if err := NewBuild(projectPath, config).Generate(targetPath); err != nil {
 					panic(err)
 				}
 			},

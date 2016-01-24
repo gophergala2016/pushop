@@ -2,24 +2,18 @@ package main
 
 import (
 	"html/template"
-	"image"
-	"image/gif"
-	"image/jpeg"
-	"image/png"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-
-	"github.com/nfnt/resize"
 )
 
 const (
-	defaultTargetDirectory = "_site"
-	maxWidth               = 480
-	maxHeight              = 480
+	defaultTargetPath = "_site"
+	maxWidth          = 480
+	maxHeight         = 480
 )
 
 type Build struct {
@@ -37,6 +31,8 @@ type TemplateFile struct {
 	HtmlURL       string
 	Name          string
 	Description   string
+	Next          string
+	Previous      string
 }
 
 type TemplateFiles []*TemplateFile
@@ -105,52 +101,6 @@ func (b *Build) generateThumbnails(source, imagesPath string, fileList TemplateF
 	return nil
 }
 
-func copyFile(source, destination string) error {
-	fr, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	defer fr.Close()
-	fw, err := os.Create(destination)
-	if err != nil {
-		return err
-	}
-	defer fw.Close()
-	_, err = io.Copy(fw, fr)
-	return err
-}
-
-func generateThumbnail(source, destination string) error {
-	file, err := os.Open(source)
-	if err != nil {
-		return err
-	}
-	var img image.Image
-	var imageType string
-	img, imageType, err = image.Decode(file)
-	if err != nil {
-		return err
-	}
-	file.Close()
-
-	m := resize.Thumbnail(maxWidth, maxHeight, img, resize.Lanczos3)
-
-	out, err := os.Create(destination)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-	switch imageType {
-	case "gif":
-		return gif.Encode(out, m, nil)
-	case "jpeg":
-		return jpeg.Encode(out, m, nil)
-	case "png":
-		return png.Encode(out, m)
-	}
-	return nil
-}
-
 func (b *Build) collectFiles(source, destination string) (TemplateFiles, error) {
 	var content TemplateFiles
 	files, err := ioutil.ReadDir(source)
@@ -192,6 +142,18 @@ func (b *Build) collectFiles(source, destination string) (TemplateFiles, error) 
 		}
 		content = append(content, templateFile)
 	}
+	last := len(content) - 1
+	for i, _ := range content {
+		content[i].Previous = content[last].HtmlURL
+		if i > 0 {
+			content[i].Previous = content[i-1].HtmlURL
+		}
+		content[i].Next = content[0].HtmlURL
+		if i < last {
+			content[i].Next = content[i+1].HtmlURL
+		}
+	}
+
 	return content, nil
 }
 

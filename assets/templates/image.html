@@ -1,6 +1,16 @@
 {{define "content"}}
-	<figure>
-		<img src="{{.Image.ImageURL}}" alt="{{.Image.Name}}" />
-		<figcaption>{{.Image.Name}}</figcaption>
-	</figure>
+	<div class="row">
+		<div class="col-sm-12 col-md-12">
+			<div class="thumbnail" itemscope itemtype="http://schema.org/ImageObject">
+				<img src="{{.Image.ImageURL}}" alt="{{.Image.Name}}">
+				<div class="caption">
+					<h3 itemprop="name">{{.Image.Name}}</h3>
+					{{ if .Image.Description}}<p itemprop="description">{{.Image.Description}}</p>{{end}}
+					{{ if .Author}}<p>By <span itemprop="author">{{.Author}}</span></p>{{end}}
+				</div>
+				{{if .Image.Previous}}<a class="btn btn-primary btn-lg" role="button" href="{{.Image.Previous}}">&larr;</a>{{end}}
+				{{if .Image.Next}}<a class="btn btn-primary btn-lg" role="button" href="{{.Image.Next}}">&rarr;</a>{{end}}
+			</div>
+		</div>
+	</div>
 {{end}}
