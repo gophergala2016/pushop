@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"path"
 
@@ -26,6 +27,7 @@ func getProjectPath(c *cli.Context) string {
 	if dirname == "" {
 		dirname = getWorkingPath()
 	}
+
 	if _, err := os.Stat(dirname); os.IsNotExist(err) {
 		panic(err)
 	}
@@ -63,13 +65,19 @@ func main() {
 			Action: func(c *cli.Context) {
 				config := NewConfig()
 				projectPath := getProjectPath(c)
-				if err := config.LoadFile(path.Join(projectPath, defaultConfigFileName)); err != nil {
+				configFile := path.Join(projectPath, defaultConfigFileName)
+				if _, err := os.Stat(configFile); os.IsNotExist(err) {
+					log.Printf("Config file not found in `%s`. Please run `init` first", configFile)
+					os.Exit(1)
+				}
+				if err := config.LoadFile(configFile); err != nil {
 					panic(err)
 				}
-				targetPath := path.Join(projectPath, defaultTargetPath)
+				targetPath := path.Join(projectPath, defaultTargetSegment)
 				if err := NewBuild(projectPath, config).Generate(targetPath); err != nil {
 					panic(err)
 				}
+				log.Println("Build completed.")
 			},
 		},
 		{

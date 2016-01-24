@@ -11,17 +11,22 @@ import (
 )
 
 const (
-	defaultTargetPath = "_site"
-	maxWidth          = 480
-	maxHeight         = 480
+	defaultTargetSegment   = "_site"
+	imagesSegment          = "i"
+	originalImagesSegment  = "o"
+	thumbnailImagesSegment = "t"
+	pagesSegment           = "image"
+
+	maxWidth  = 480
+	maxHeight = 480
 )
 
 type Build struct {
-	config *Config
-	target string
+	projectPath string
+	config      *Config
 }
 
-type TemplateFile struct {
+type TemplateImage struct {
 	OriginalPath  string
 	ThumbnailPath string
 	ThumbnailURL  string
@@ -35,75 +40,73 @@ type TemplateFile struct {
 	Previous      string
 }
 
-type TemplateFiles []*TemplateFile
+type TemplateImages []*TemplateImage
 
-func NewBuild(target string, config *Config) *Build {
-	return &Build{config, target}
+func NewBuild(projectPath string, config *Config) *Build {
+	return &Build{projectPath, config}
 }
 
-func (b *Build) Generate(source string) error {
-
-	fileList, err := b.collectFiles(source, b.target)
-	if err != nil {
-		return err
-	}
+func (b *Build) Generate(targetPath string) error {
+	var err error
 
 	// Clean the project
-	b.Clean()
-	b.createDirectory(b.target)
-	originalImagesPath := path.Join(b.target, "i", "o")
-	b.createDirectory(originalImagesPath)
-	b.copyImages(source, originalImagesPath, fileList)
-	thumbnailImagesPath := path.Join(b.target, "i", "t")
-	b.createDirectory(thumbnailImagesPath)
-	if err := b.generateThumbnails(source, thumbnailImagesPath, fileList); err != nil {
-		panic(err)
-	}
-
-	indexFile, err := os.Create(path.Join(b.target, "index.html"))
-	if err != nil {
+	if err = b.Clean(targetPath); err != nil {
 		return err
 	}
-	defer indexFile.Close()
-	err = b.frontPage(fileList, indexFile)
+
+	// Collect Files
+	var templateImages TemplateImages
+	templateImages, err = b.collectFiles(b.projectPath, targetPath)
 	if err != nil {
 		return err
 	}
 
-	pagesPath := path.Join(b.target, "image")
-	b.createDirectory(pagesPath)
-	return b.generateImagePages(pagesPath, fileList)
+	// Create directory
+	if err = b.createDirectory(targetPath); err != nil {
+		return err
+	}
+
+	// Copy images and generate thumbnails
+	if err = b.generateImages(templateImages); err != nil {
+		return err
+	}
+
+	// Generate the index page
+	if err = b.generateIndex(targetPath, templateImages); err != nil {
+		return err
+	}
+
+	// Generate the image pages
+	pagesPath := path.Join(targetPath, pagesSegment)
+	if err = b.createDirectory(pagesPath); err != nil {
+		return err
+	}
+	return b.generateImagePages(pagesPath, templateImages)
 }
 
-func (b *Build) Clean() error {
-	return os.RemoveAll(b.target)
+func (b *Build) Clean(targetPath string) error {
+	return os.RemoveAll(targetPath)
 }
 
 func (b *Build) createDirectory(path string) error {
 	return os.MkdirAll(path, 0766)
 }
 
-func (b *Build) copyImages(source, imagesPath string, fileList TemplateFiles) error {
-	for _, templateFile := range fileList {
-		if err := copyFile(templateFile.OriginalPath, templateFile.ImagePath); err != nil {
+func (b *Build) generateImages(templateImages TemplateImages) error {
+	for _, ti := range templateImages {
+		if err := copyFile(ti.OriginalPath, ti.ImagePath); err != nil {
+			return err
+		}
+		if err := generateThumbnail(ti.OriginalPath, ti.ThumbnailPath); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func (b *Build) generateThumbnails(source, imagesPath string, fileList TemplateFiles) error {
-	for _, templateFile := range fileList {
-		if err := generateThumbnail(templateFile.OriginalPath, templateFile.ThumbnailPath); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (b *Build) collectFiles(source, destination string) (TemplateFiles, error) {
-	var content TemplateFiles
-	files, err := ioutil.ReadDir(source)
+func (b *Build) collectFiles(projectPath, targetPath string) (TemplateImages, error) {
+	var templateImages TemplateImages
+	files, err := ioutil.ReadDir(projectPath)
 	if err != nil {
 		return nil, err
 	}
@@ -124,40 +127,49 @@ func (b *Build) collectFiles(source, destination string) (TemplateFiles, error) 
 			continue
 		}
 		fileName := fileInfo.Name()
-		templateFile := &TemplateFile{
+		ti := &TemplateImage{
 			Name:          fileName,
 			Description:   "",
-			OriginalPath:  path.Join(source, fileName),
-			ThumbnailPath: path.Join(destination, "i", "t", fileName),
-			ThumbnailURL:  "/i/t/" + fileName,
-			ImagePath:     path.Join(destination, "i", "o", fileName),
-			ImageURL:      "/i/o/" + fileName,
-			HtmlPath:      path.Join(destination, "image", getImageFileName(fileName)),
-			HtmlURL:       "/image/" + getImageFileName(fileName),
+			OriginalPath:  path.Join(projectPath, fileName),
+			ThumbnailPath: path.Join(targetPath, imagesSegment, thumbnailImagesSegment),
+			ThumbnailURL:  "/" + imagesSegment + "/" + thumbnailImagesSegment + "/" + fileName,
+			ImagePath:     path.Join(targetPath, imagesSegment, originalImagesSegment),
+			ImageURL:      "/" + imagesSegment + "/" + originalImagesSegment + "/" + fileName,
+			HtmlPath:      path.Join(targetPath, pagesSegment, getImageFileName(fileName)),
+			HtmlURL:       "/" + pagesSegment + "/" + getImageFileName(fileName),
 		}
 		if _, ok := b.config.Content[fileInfo.Name()]; ok {
 			file := b.config.Content[fileInfo.Name()]
-			templateFile.Name = file.Name
-			templateFile.Description = file.Description
+			ti.Name = file.Name
+			ti.Description = file.Description
 		}
-		content = append(content, templateFile)
+		templateImages = append(templateImages, ti)
 	}
-	last := len(content) - 1
-	for i, _ := range content {
-		content[i].Previous = content[last].HtmlURL
+	last := len(templateImages)
+	for i, _ := range templateImages {
+		templateImages[i].Previous = templateImages[last].HtmlURL
 		if i > 0 {
-			content[i].Previous = content[i-1].HtmlURL
+			templateImages[i].Previous = templateImages[i-1].HtmlURL
 		}
-		content[i].Next = content[0].HtmlURL
+		templateImages[i].Next = templateImages[0].HtmlURL
 		if i < last {
-			content[i].Next = content[i+1].HtmlURL
+			templateImages[i].Next = templateImages[i+1].HtmlURL
 		}
 	}
 
-	return content, nil
+	return templateImages, nil
 }
 
-func (b *Build) frontPage(fileList TemplateFiles, w io.Writer) error {
+func (b *Build) generateIndex(targetPath string, templateImages TemplateImages) error {
+	indexFile, err := os.Create(path.Join(targetPath, "index.html"))
+	if err != nil {
+		return err
+	}
+	defer indexFile.Close()
+	return b.frontPage(indexFile, templateImages)
+}
+
+func (b *Build) frontPage(w io.Writer, templateImages TemplateImages) error {
 	layoutData, err := Asset("assets/templates/layout.html")
 	if err != nil {
 		return err
@@ -175,12 +187,12 @@ func (b *Build) frontPage(fileList TemplateFiles, w io.Writer) error {
 		"Title":       b.config.Title,
 		"Description": b.config.Description,
 		"Analytics":   b.config.Analytics,
-		"Images":      fileList,
+		"Images":      templateImages,
 	}
 	return t.Execute(w, templateData)
 }
 
-func (b *Build) generateImagePages(pagesPath string, tf TemplateFiles) error {
+func (b *Build) generateImagePages(pagesPath string, templateImages TemplateImages) error {
 	layoutData, err := Asset("assets/templates/layout.html")
 	if err != nil {
 		return err
@@ -195,8 +207,8 @@ func (b *Build) generateImagePages(pagesPath string, tf TemplateFiles) error {
 	}
 	t.Parse(string(imageData))
 
-	for _, templateFile := range tf {
-		if err = b.generateaImagePage(templateFile, t); err != nil {
+	for _, ti := range templateImages {
+		if err = b.generateaImagePage(ti, t); err != nil {
 			return err
 		}
 	}
@@ -207,8 +219,8 @@ func getImageFileName(fileName string) string {
 	return strings.TrimSuffix(fileName, filepath.Ext(fileName)) + ".html"
 }
 
-func (b *Build) generateaImagePage(tf *TemplateFile, t *template.Template) error {
-	imageFile, err := os.Create(tf.HtmlPath)
+func (b *Build) generateaImagePage(ti *TemplateImage, t *template.Template) error {
+	imageFile, err := os.Create(ti.HtmlPath)
 	if err != nil {
 		return err
 	}
@@ -218,7 +230,11 @@ func (b *Build) generateaImagePage(tf *TemplateFile, t *template.Template) error
 		"Title":       b.config.Title,
 		"Description": b.config.Description,
 		"Analytics":   b.config.Analytics,
-		"Image":       tf,
+		"Image":       ti,
 	}
 	return t.Execute(imageFile, templateData)
+}
+
+func getTumbnailImagesPath(targetPath string) string {
+	return path.Join(targetPath, imagesSegment, thumbnailImagesSegment)
 }
