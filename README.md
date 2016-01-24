@@ -4,6 +4,8 @@ Static gallery webiste generator
 
 Demo gallery: http://gallery.bazadanni.com/
 
+![Demo image](http://i.imgur.com/cIHbGlg.png)
+
 ```
 $ pushop
 NAME:
