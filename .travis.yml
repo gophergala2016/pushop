@@ -1,7 +1,4 @@
 language: go
 
-install:
-    - go get -u github.com/jteeuwen/go-bindata/...
-
 go:
     - 1.5.3
