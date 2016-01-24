@@ -85,7 +85,7 @@ func (c *Config) Init(projectPath string) error {
 	w := bufio.NewWriter(file)
 	err = c.Save(w)
 	if err != nil {
-		panic(err)
+		return err
 	}
 	w.Flush()
 	return file.Close()
