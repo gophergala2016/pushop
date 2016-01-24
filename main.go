@@ -20,7 +20,7 @@ func main() {
 	app.Usage = appUsage
 	app.Version = appVersion
 
-	config := newConfig()
+	config := NewConfig()
 
 	app.Commands = []cli.Command{
 		{
@@ -80,7 +80,7 @@ func main() {
 				if err != nil {
 					panic(err)
 				}
-				err = newBuild(dirname, config).generate()
+				err = NewBuild(dirname, config).Generate(currentDir)
 				if err != nil {
 					panic(err)
 				}
@@ -91,6 +91,13 @@ func main() {
 			Usage: "Builds and serves the gallery",
 			Action: func(c *cli.Context) {
 				println("serve")
+			},
+		},
+		{
+			Name:  "clean",
+			Usage: "Cleans the target directory",
+			Action: func(c *cli.Context) {
+				println("clean")
 			},
 		},
 	}

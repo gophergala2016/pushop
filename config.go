@@ -35,7 +35,7 @@ type File struct {
 	Permalink   string   `yaml:"permalink,omitempty"`
 }
 
-func newConfig() *Config {
+func NewConfig() *Config {
 	return &Config{
 		Title:       defaultTitle,
 		Description: defaultDescription,
