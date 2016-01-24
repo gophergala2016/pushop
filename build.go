@@ -32,7 +32,9 @@ func (b *Build) Generate(source string) error {
 	// Clean the project
 	b.Clean()
 	b.createDirectory(b.target)
-
+	imagesPath := path.Join(b.target, "images")
+	b.createDirectory(imagesPath)
+	b.copyImages(source, imagesPath, fileList)
 	indexFile, err := os.Create(path.Join(b.target, "index.html"))
 	if err != nil {
 		return err
@@ -52,6 +54,30 @@ func (b *Build) Clean() error {
 
 func (b *Build) createDirectory(path string) error {
 	return os.MkdirAll(path, 0766)
+}
+
+func (b *Build) copyImages(source, imagesPath string, fileList map[string]*File) error {
+	for name, _ := range fileList {
+		if err := copyFile(path.Join(source, name), path.Join(imagesPath, name)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copyFile(source, destination string) error {
+	fr, err := os.Open(source)
+	if err != nil {
+		return err
+	}
+	defer fr.Close()
+	fw, err := os.Create(destination)
+	if err != nil {
+		return err
+	}
+	defer fw.Close()
+	_, err = io.Copy(fw, fr)
+	return err
 }
 
 func (b *Build) collectFiles(source string) (map[string]*File, error) {
