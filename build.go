@@ -61,9 +61,15 @@ func (b *Build) Generate(targetPath string) error {
 		return err
 	}
 
-	// Create directory
-	if err = b.createDirectory(targetPath); err != nil {
-		return err
+	// Create directories
+	for _, path := range []string{
+		targetPath,
+		path.Join(targetPath, imagesSegment, originalImagesSegment),
+		path.Join(targetPath, imagesSegment, thumbnailImagesSegment),
+	} {
+		if err = b.createDirectory(path); err != nil {
+			return err
+		}
 	}
 
 	// Copy images and generate thumbnails
@@ -131,9 +137,9 @@ func (b *Build) collectFiles(projectPath, targetPath string) (TemplateImages, er
 			Name:          fileName,
 			Description:   "",
 			OriginalPath:  path.Join(projectPath, fileName),
-			ThumbnailPath: path.Join(targetPath, imagesSegment, thumbnailImagesSegment),
+			ThumbnailPath: path.Join(targetPath, imagesSegment, thumbnailImagesSegment, fileName),
 			ThumbnailURL:  "/" + imagesSegment + "/" + thumbnailImagesSegment + "/" + fileName,
-			ImagePath:     path.Join(targetPath, imagesSegment, originalImagesSegment),
+			ImagePath:     path.Join(targetPath, imagesSegment, originalImagesSegment, fileName),
 			ImageURL:      "/" + imagesSegment + "/" + originalImagesSegment + "/" + fileName,
 			HtmlPath:      path.Join(targetPath, pagesSegment, getImageFileName(fileName)),
 			HtmlURL:       "/" + pagesSegment + "/" + getImageFileName(fileName),
@@ -145,7 +151,7 @@ func (b *Build) collectFiles(projectPath, targetPath string) (TemplateImages, er
 		}
 		templateImages = append(templateImages, ti)
 	}
-	last := len(templateImages)
+	last := len(templateImages) - 1
 	for i, _ := range templateImages {
 		templateImages[i].Previous = templateImages[last].HtmlURL
 		if i > 0 {
