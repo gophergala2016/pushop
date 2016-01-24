@@ -20,7 +20,7 @@ func main() {
 	app.Usage = appUsage
 	app.Version = appVersion
 
-	config := newConfig()
+	config := NewConfig()
 
 	app.Commands = []cli.Command{
 		{
@@ -65,7 +65,25 @@ func main() {
 			Name:  "build",
 			Usage: "Builds the gallery",
 			Action: func(c *cli.Context) {
-				println("build")
+				var err error
+				dirname := c.Args().First()
+				var currentDir string
+				if currentDir, err = os.Getwd(); err != nil {
+					panic(err)
+				}
+				if dirname == "" {
+					dirname = path.Join(currentDir, defaultTargetDirectory)
+				}
+				file, err := os.Open(path.Join(currentDir, defaultConfigFileName))
+				defer file.Close()
+				err = config.load(file)
+				if err != nil {
+					panic(err)
+				}
+				err = NewBuild(dirname, config).Generate(currentDir)
+				if err != nil {
+					panic(err)
+				}
 			},
 		},
 		{
@@ -73,6 +91,13 @@ func main() {
 			Usage: "Builds and serves the gallery",
 			Action: func(c *cli.Context) {
 				println("serve")
+			},
+		},
+		{
+			Name:  "clean",
+			Usage: "Cleans the target directory",
+			Action: func(c *cli.Context) {
+				println("clean")
 			},
 		},
 	}
