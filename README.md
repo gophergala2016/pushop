@@ -2,6 +2,8 @@
 
 Static gallery webiste generator
 
+Demo gallery: http://gallery.bazadanni.com/
+
 ```
 $ pushop
 NAME:

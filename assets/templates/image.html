@@ -8,8 +8,8 @@
 					{{ if .Image.Description}}<p itemprop="description">{{.Image.Description}}</p>{{end}}
 					{{ if .Author}}<p>By <span itemprop="author">{{.Author}}</span></p>{{end}}
 				</div>
-				{{if .Image.Previous}}<a class="btn btn-primary btn-lg" role="button" href="{{.Image.Previous}}">&larr;</a>{{end}}
-				{{if .Image.Next}}<a class="btn btn-primary btn-lg" role="button" href="{{.Image.Next}}">&rarr;</a>{{end}}
+				{{if .Image.Previous}}<a class="btn btn-primary btn-lg" role="button" accesskey="j" href="{{.Image.Previous}}">&larr;</a>{{end}}
+				{{if .Image.Next}}<a class="btn btn-primary btn-lg" role="button" accesskey="k" href="{{.Image.Next}}">&rarr;</a>{{end}}
 			</div>
 		</div>
 	</div>
