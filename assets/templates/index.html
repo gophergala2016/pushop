@@ -1,7 +1,5 @@
 {{define "content"}}
-	<ul>
-	{{range $i, $image := .Images}}
-		<li><a href="#">{{$image.Name}}</a></li>
-	{{end}}
-	</ul>
+	<ul>{{range $i, $image := .Images}}
+		<li><a href="$i">{{$image.Name}}</a></li>
+	{{end}}</ul>
 {{end}}
