@@ -91,7 +91,9 @@ func main() {
 			Name:  "clean",
 			Usage: "Cleans the target directory",
 			Action: func(c *cli.Context) {
-				println("clean")
+				projectPath := getProjectPath(c)
+				targetPath := path.Join(projectPath, defaultTargetSegment)
+				cleanProject(targetPath)
 			},
 		},
 	}

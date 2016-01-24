@@ -50,7 +50,7 @@ func (b *Build) Generate(targetPath string) error {
 	var err error
 
 	// Clean the project
-	if err = b.Clean(targetPath); err != nil {
+	if err = cleanProject(targetPath); err != nil {
 		return err
 	}
 
@@ -84,7 +84,7 @@ func (b *Build) Generate(targetPath string) error {
 	return b.generateImagePages(pagesPath, templateImages)
 }
 
-func (b *Build) Clean(targetPath string) error {
+func cleanProject(targetPath string) error {
 	return os.RemoveAll(targetPath)
 }
 
